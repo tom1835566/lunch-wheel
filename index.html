@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>午餐吃什麼？</title>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* 跑馬燈顯示區 */
+        #display-box {
+            font-size: 24px; font-weight: bold; color: #333;
+            height: 60px; line-height: 60px;
+            background: #e3e3e3; border-radius: 10px; margin-bottom: 20px;
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        }
+
+        /* 按鈕樣式 */
+        button {
+            padding: 15px 40px; font-size: 20px; cursor: pointer;
+            background: #007bff; color: white; border: none; border-radius: 50px;
+            transition: 0.3s;
+        }
+        button:hover { background: #0056b3; transform: scale(1.05); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* 結果預覽區 */
+        #result-area { margin-top: 20px; min-height: 300px; display: flex; align-items: center; justify-content: center; border: 2px dashed #ddd; border-radius: 10px; padding: 10px; }
+        img { max-width: 100%; max-height: 600px; border-radius: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        iframe { width: 100%; height: 600px; border: none; }
+        
+        /* Excel 下載卡片 */
+        .excel-card { padding: 30px; background: #e8f5e9; border-radius: 10px; color: #2e7d32; }
+        .excel-btn { display: inline-block; margin-top: 10px; padding: 10px 20px; background: #4caf50; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍱 今天午餐吃哪家？</h1>
+    
+    <div id="display-box">準備開始...</div>
+    <button id="spinBtn" onclick="startSpin()">🎲 隨機選擇</button>
+
+    <div id="result-area">
+        <p style="color: #888;">點擊按鈕開始抽籤，結果將顯示於此</p>
+    </div>
+</div>
+
+<script src="list.js"></script>
+
+<script>
+    // 檢查清單是否存在
+    if (typeof LUNCH_LIST === 'undefined' || LUNCH_LIST.length === 0) {
+        document.getElementById('display-box').innerText = "❌ 尚未讀取到清單，請確認 list.js";
+        document.querySelector('button').disabled = true;
+    }
+
+    function startSpin() {
+        const display = document.getElementById('display-box');
+        const resultArea = document.getElementById('result-area');
+        const btn = document.getElementById('spinBtn');
+        
+        btn.disabled = true; // 防止重複點擊
+        resultArea.innerHTML = '<p style="color:#888;">抽籤中...</p>';
+        
+        let count = 0;
+        const totalSpins = 30; // 跳動次數
+        const speed = 100;     // 跳動速度(ms)
+
+        // 跑馬燈動畫
+        const interval = setInterval(() => {
+            const randomName = LUNCH_LIST[Math.floor(Math.random() * LUNCH_LIST.length)];
+            display.innerText = randomName;
+            count++;
+
+            if (count >= totalSpins) {
+                clearInterval(interval);
+                showResult(randomName);
+                btn.disabled = false;
+            }
+        }, speed);
+    }
+
+    function showResult(fileName) {
+        const resultArea = document.getElementById('result-area');
+        const filePath = `./lunch_files/${encodeURIComponent(fileName)}`;
+        const ext = fileName.split('.').pop().toLowerCase();
+
+        let htmlContent = '';
+
+        if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+            // 圖片
+            htmlContent = `<img src="${filePath}" alt="${fileName}">`;
+        } else if (ext === 'pdf') {
+            // PDF (使用 iframe 預覽)
+            htmlContent = `<iframe src="${filePath}"></iframe>`;
+        } else if (['xls', 'xlsx'].includes(ext)) {
+            // Excel (提供下載按鈕)
+            htmlContent = `
+                <div class="excel-card">
+                    <h3>📊 抽中 Excel 菜單</h3>
+                    <p>${fileName}</p>
+                    <a href="${filePath}" class="excel-btn" download>📥 下載/開啟菜單</a>
+                    <p style="font-size:12px; margin-top:5px; color:#666;">Excel 檔案無法直接預覽，請下載後開啟</p>
+                </div>
+            `;
+        }
+
+        resultArea.innerHTML = htmlContent;
+    }
+</script>
+
+</body>
+</html>
